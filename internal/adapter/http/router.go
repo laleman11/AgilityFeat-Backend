@@ -1,7 +1,6 @@
 package http
 
 import (
-	ping "AgilityFeat-Backend/internal/app/ping"
 	"AgilityFeat-Backend/internal/port"
 	"context"
 	"errors"
@@ -13,11 +12,9 @@ type handler struct {
 	pingService port.PingService
 }
 
-func NewRouter() *gin.Engine {
+func NewRouter(pingService port.PingService) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
-
-	pingService := ping.NewService()
 
 	h := handler{pingService}
 
