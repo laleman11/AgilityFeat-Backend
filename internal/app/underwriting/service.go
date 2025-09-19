@@ -1,6 +1,9 @@
 package underwriting
 
-import "context"
+import (
+	underwritingCore "AgilityFeat-Backend/internal/core/underwriting"
+	"context"
+)
 
 type ApplicationInput struct {
 	MonthlyIncome float64
@@ -28,12 +31,19 @@ func (s *Service) Evaluate(ctx context.Context, input ApplicationInput) (Result,
 	if err := ctx.Err(); err != nil {
 		return Result{}, err
 	}
+	result := underwritingCore.Evaluate(underwritingCore.InputUnderwriting{
+		MonthlyIncome: input.MonthlyIncome,
+		MonthlyDebts:  input.MonthlyDebts,
+		LoanAmount:    input.LoanAmount,
+		PropertyValue: input.PropertyValue,
+		CreditScore:   input.CreditScore,
+		OccupancyType: input.OccupancyType,
+	})
 
-	//TODO: fix
 	return Result{
-		Decision: "Approve",
-		DTI:      2.2,
-		LTV:      2.2,
-		Reasons:  make([]string, 0),
+		Decision: string(result.Decision),
+		DTI:      result.DTI,
+		LTV:      result.LTV,
+		Reasons:  result.Reasons,
 	}, nil
 }
