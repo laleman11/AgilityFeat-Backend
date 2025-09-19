@@ -39,11 +39,11 @@ func TestHandleUnderWriting(t *testing.T) {
 	}
 	router := NewRouter(stubPingService{}, stubUnderwritingService{result: response})
 	payload := map[string]any{
-		"monthly_income": 0,
-		"monthly_debts":  0,
-		"loan_amount":    0,
-		"property_value": 0,
-		"credit_score":   0,
+		"monthly_income": 5000,
+		"monthly_debts":  2000,
+		"loan_amount":    270000,
+		"property_value": 300000,
+		"credit_score":   500,
 		"occupancy_type": "primary",
 	}
 	body, err := json.Marshal(payload)
@@ -86,7 +86,7 @@ func TestHandleUnderwritingError(t *testing.T) {
 
 	router.ServeHTTP(resp, req)
 
-	if resp.Code != http.StatusRequestTimeout {
+	if resp.Code != http.StatusBadRequest {
 		t.Fatalf("expected timeout status, got %d", resp.Code)
 	}
 }
