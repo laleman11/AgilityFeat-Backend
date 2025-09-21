@@ -22,9 +22,10 @@ type UnderwritingResponse struct {
 }
 
 type UnderwritingHistoryEntry struct {
-	UserID   string
-	Request  UnderwritingRequest
-	Response UnderwritingResponse
+	UserID    string
+	Request   UnderwritingRequest
+	Response  UnderwritingResponse
+	CreatedAt string
 }
 
 type UnderWritingService interface {

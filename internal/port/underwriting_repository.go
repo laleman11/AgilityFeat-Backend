@@ -3,12 +3,14 @@ package port
 import (
 	domain "AgilityFeat-Backend/internal/core/underwriting"
 	"context"
+	"time"
 )
 
 type EvaluationRecord struct {
 	UserID      string
 	Application domain.InputUnderwriting
 	Result      domain.Result
+	CreatedAt   time.Time
 }
 
 type UnderwritingRepository interface {

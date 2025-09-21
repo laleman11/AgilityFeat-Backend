@@ -4,6 +4,7 @@ import (
 	underwritingCore "AgilityFeat-Backend/internal/core/underwriting"
 	"AgilityFeat-Backend/internal/port"
 	"context"
+	"time"
 )
 
 type Service struct {
@@ -18,17 +19,22 @@ func (s *Service) Evaluate(ctx context.Context, input port.UnderwritingRequest) 
 	if err := ctx.Err(); err != nil {
 		return port.UnderwritingResponse{}, err
 	}
-	result := underwritingCore.Evaluate(underwritingCore.InputUnderwriting{
+	application := underwritingCore.InputUnderwriting{
 		MonthlyIncome: input.MonthlyIncome,
 		MonthlyDebts:  input.MonthlyDebts,
 		LoanAmount:    input.LoanAmount,
 		PropertyValue: input.PropertyValue,
 		CreditScore:   input.CreditScore,
 		OccupancyType: input.OccupancyType,
-	})
+	}
+	result := underwritingCore.Evaluate(application)
+	now := time.Now().UTC()
 
 	s.repository.Save(ctx, port.EvaluationRecord{
-		UserID: input.UserID,
+		UserID:      input.UserID,
+		Result:      result,
+		Application: application,
+		CreatedAt:   now,
 	})
 
 	return port.UnderwritingResponse{
@@ -72,6 +78,7 @@ func (s *Service) History(ctx context.Context, userID string) ([]port.Underwriti
 				LTV:      rec.Result.LTV,
 				Reasons:  append([]string(nil), rec.Result.Reasons...),
 			},
+			CreatedAt: rec.CreatedAt.Format(time.RFC3339Nano),
 		}
 	}
 
