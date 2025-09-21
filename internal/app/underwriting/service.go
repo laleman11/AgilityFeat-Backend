@@ -2,34 +2,21 @@ package underwriting
 
 import (
 	underwritingCore "AgilityFeat-Backend/internal/core/underwriting"
+	"AgilityFeat-Backend/internal/port"
 	"context"
 )
 
-type ApplicationInput struct {
-	MonthlyIncome float64
-	MonthlyDebts  float64
-	LoanAmount    float64
-	PropertyValue float64
-	CreditScore   int
-	OccupancyType string
+type Service struct {
+	repository port.UnderwritingRepository
 }
 
-type Result struct {
-	Decision string
-	DTI      float64
-	LTV      float64
-	Reasons  []string
+func NewService(repository port.UnderwritingRepository) *Service {
+	return &Service{repository: repository}
 }
 
-type Service struct{}
-
-func NewService() *Service {
-	return &Service{}
-}
-
-func (s *Service) Evaluate(ctx context.Context, input ApplicationInput) (Result, error) {
+func (s *Service) Evaluate(ctx context.Context, input port.UnderwritingRequest) (port.UnderwritingResponse, error) {
 	if err := ctx.Err(); err != nil {
-		return Result{}, err
+		return port.UnderwritingResponse{}, err
 	}
 	result := underwritingCore.Evaluate(underwritingCore.InputUnderwriting{
 		MonthlyIncome: input.MonthlyIncome,
@@ -40,10 +27,53 @@ func (s *Service) Evaluate(ctx context.Context, input ApplicationInput) (Result,
 		OccupancyType: input.OccupancyType,
 	})
 
-	return Result{
+	s.repository.Save(ctx, port.EvaluationRecord{
+		UserID: input.UserID,
+	})
+
+	return port.UnderwritingResponse{
 		Decision: string(result.Decision),
 		DTI:      result.DTI,
 		LTV:      result.LTV,
 		Reasons:  result.Reasons,
 	}, nil
+}
+
+func (s *Service) History(ctx context.Context, userID string) ([]port.UnderwritingHistoryEntry, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+
+	if s.repository == nil {
+		return []port.UnderwritingHistoryEntry{}, nil
+	}
+
+	records, err := s.repository.FindByUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	history := make([]port.UnderwritingHistoryEntry, len(records))
+	for i, rec := range records {
+		history[i] = port.UnderwritingHistoryEntry{
+			UserID: rec.UserID,
+			Request: port.UnderwritingRequest{
+				UserID:        rec.UserID,
+				MonthlyIncome: rec.Application.MonthlyIncome,
+				MonthlyDebts:  rec.Application.MonthlyDebts,
+				LoanAmount:    rec.Application.LoanAmount,
+				PropertyValue: rec.Application.PropertyValue,
+				CreditScore:   rec.Application.CreditScore,
+				OccupancyType: rec.Application.OccupancyType,
+			},
+			Response: port.UnderwritingResponse{
+				Decision: string(rec.Result.Decision),
+				DTI:      rec.Result.DTI,
+				LTV:      rec.Result.LTV,
+				Reasons:  append([]string(nil), rec.Result.Reasons...),
+			},
+		}
+	}
+
+	return history, nil
 }

@@ -1,7 +1,6 @@
 package http
 
 import (
-	underwritingapp "AgilityFeat-Backend/internal/app/underwriting"
 	"AgilityFeat-Backend/internal/port"
 	"context"
 	"errors"
@@ -14,7 +13,10 @@ type handler struct {
 	underwritingService port.UnderWritingService
 }
 
-func NewRouter(pingService port.PingService, underwritingService port.UnderWritingService) *gin.Engine {
+func NewRouter(
+	pingService port.PingService,
+	underwritingService port.UnderWritingService,
+) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger(), gin.Recovery())
 
@@ -23,13 +25,15 @@ func NewRouter(pingService port.PingService, underwritingService port.UnderWriti
 	v1 := router.Group("/api/v1")
 	{
 		v1.GET("/ping", h.handlePing)
-		v1.POST("underwriting", h.handleUnderwriting)
+		v1.POST("/underwriting", h.handleUnderwriting)
+		v1.GET("/underwriting/history/:user_id", h.handleUnderwritingHistory)
 	}
 
 	return router
 }
 
 type underwritingRequest struct {
+	UserID        string  `json:"user_id" binding:"required"`
 	MonthlyIncome float64 `json:"monthly_income" binding:"required"`
 	MonthlyDebts  float64 `json:"monthly_debts" binding:"required" `
 	LoanAmount    float64 `json:"loan_amount" binding:"required"`
@@ -45,7 +49,8 @@ func (h handler) handleUnderwriting(c *gin.Context) {
 		return
 	}
 
-	result, err := h.underwritingService.Evaluate(c.Request.Context(), underwritingapp.ApplicationInput{
+	result, err := h.underwritingService.Evaluate(c.Request.Context(), port.UnderwritingRequest{
+		UserID:        payload.UserID,
 		MonthlyIncome: payload.MonthlyIncome,
 		MonthlyDebts:  payload.MonthlyDebts,
 		LoanAmount:    payload.LoanAmount,
@@ -88,4 +93,24 @@ func (h handler) handlePing(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": message})
+}
+
+func (h handler) handleUnderwritingHistory(c *gin.Context) {
+	userID := c.Param("user_id")
+	if userID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "user_id is required"})
+		return
+	}
+
+	history, err := h.underwritingService.History(c.Request.Context(), userID)
+	if err != nil {
+		status := http.StatusInternalServerError
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			status = http.StatusRequestTimeout
+		}
+		c.JSON(status, gin.H{"error": http.StatusText(status)})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"items": history})
 }

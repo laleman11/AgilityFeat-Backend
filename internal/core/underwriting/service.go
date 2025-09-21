@@ -39,8 +39,8 @@ type Result struct {
 }
 
 func Evaluate(input InputUnderwriting) Result {
-	dti := calculateRatio(input.MonthlyDebts, input.MonthlyIncome)
-	ltv := calculateRatio(input.LoanAmount, input.PropertyValue)
+	dti := calculateDti(input.MonthlyDebts, input.MonthlyIncome)
+	ltv := calculateDti(input.LoanAmount, input.PropertyValue)
 
 	declineReasons := getPreDeclineReasons(input)
 
@@ -141,7 +141,7 @@ func getPreDeclineReasons(input InputUnderwriting) []string {
 	return declineReasons
 }
 
-func calculateRatio(numerator float64, denominator float64) float64 {
+func calculateDti(numerator float64, denominator float64) float64 {
 	if denominator <= 0 {
 		return math.Inf(1)
 	}
