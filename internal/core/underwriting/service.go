@@ -104,7 +104,7 @@ func getReferReasons(dti float64, ltv float64, creditScore int) []string {
 		referReason = append(referReason, fmt.Sprintf("DTI %.2f exceeds automatic approval limit %.2f", dti, approveDTI))
 	}
 	if ltv > approveLTV {
-		referReason = append(referReason, fmt.Sprintf("LTV %.2f exceeds automatic approval limit %.2f", dti, approveLTV))
+		referReason = append(referReason, fmt.Sprintf("LTV %.2f exceeds automatic approval limit %.2f", ltv, approveLTV))
 	}
 	if creditScore < approveCredit {
 		referReason = append(referReason, fmt.Sprintf("credit score %d exceeds automatic approval limit %d", creditScore, approveCredit))
